@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
     int status = 0;
     while(1){
         int choice;
-        std::cout<<"\n\nRun All [1] | Change Priority [2] | Run Individually [3]\n";
+        std::cout<<"\n\nRun All [1] | Change Priority [2] | KILL [3]\n";
         std::cin >> choice;
         switch(choice){
             case 1:
@@ -76,6 +76,16 @@ int main(int argc, char *argv[])
                 std::cout<<"\nNew priority is " <<
                          getpriority(PRIO_PROCESS,PID[num]);
                 break;
+            }
+            case 3:
+            {
+                int num;
+                std::cout << "\nEnter process number to kill: ";
+                std::cin >> num;
+                num--;
+                kill(PID[num],SIGKILL);
+                PID[num] = -1;
+                std::cout << "\nKILLED)";
             }
         }
     }
