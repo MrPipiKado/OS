@@ -6,11 +6,10 @@ using namespace std;
 using namespace std::chrono;
 
 typedef struct{
-    int threadNum;
-    int amountOfIterations;
-    double a;
-    double b;
-    double step;
+    double **dest;
+    double **source;
+    int start;
+    int end;
 } DATA;
 
 double functionToTabulate(double x);
@@ -21,34 +20,52 @@ void printThreadPriorityInfo();
 
 unsigned int __stdcall myThread(void* data) {
     DATA* args = (DATA*) data;
-    cout << "---------\n"
-         << "THREAD " << args->threadNum << endl
-         << "---------" << endl << std::flush;
-    loopedOutput(args->amountOfIterations);
-    tabulation(args->a, args->b, args->step);
-    cout << "Thread " << args->threadNum << " is ended" << endl << std::flush;
+    for(int i = args->start;i<=args->end; ++i)
+    {
+        for(int j = 0; j<10; ++j)
+        {
+            args->dest[i][j]+=args->source[i][j];
+        }
+    }
     return 0;
 }
 
-int main(int argc, char* argv[]) {
-    std::ios_base::sync_with_stdio(false);
-    int amountOfIterations;
-    double a, b, step;
-    cout << "Enter the amount of iterations to run the loop: ";
-    cin >> amountOfIterations;
-    cout << "Enter the edges of tabulation: ";
-    cin >> a >> b;
-    cout << "Enter the step of tabulation: ";
-    cin >> step;
-    DATA data = {0, amountOfIterations, a, b, step};
+void fill(double **A)
+{
+    for(int i= 0; i<10;++i)
+        for(int j = 0; j<10;++j)
+            A[i][j]=rand() % 10 + (rand() % 10) / 10.;
+}
+void print(double **A)
+{
+    for(int i= 0; i<10;++i)
+    {
+        for(int j = 0; j<10;++j)
+        {
+            cout.precision(3);
+            cout<<A[i][j]<<" ";
+        }
+        cout<<endl;
+    }
+}
 
-    cout << "Enter amount of threads: ";
-    int amountOfThreads;
-    cin >> amountOfThreads;
-    data.amountOfIterations = amountOfIterations/amountOfThreads;
-    double h = (b-a) / amountOfThreads;
-    auto *threads = new HANDLE[amountOfThreads];
-    auto *datas = new DATA[amountOfThreads];
+int main(int argc, char* argv[]) {
+    auto **A = new double*[10];
+    for(int i = 0; i<10;++i)
+        A[i] = new double [10];
+    auto **B = new double*[10];
+    for(int i = 0; i<10;++i)
+        B[i] = new double [10];
+    auto **C = new double*[10];
+    for(int i = 0; i<10;++i)
+        C[i] = new double [10];
+    fill(A);fill(B);fill(C);
+
+    print(A);cout<<endl<<endl;
+    print(B);cout<<endl<<endl;
+    print(C);cout<<endl<<endl;
+    auto *threads = new HANDLE[4];
+    auto *datas = new DATA[4];
     while(1){
         int choice;
         std::cout<<"\n\nRun All [1] | Change Priority [2]\n";
@@ -56,27 +73,31 @@ int main(int argc, char* argv[]) {
         switch(choice){
             case 1:
             {
+                DATA data;
                 auto start = std::chrono::high_resolution_clock::now();
-                for (int i = 0; i < amountOfThreads; i++){
-                    datas[i].threadNum = i;
-                    datas[i].amountOfIterations = amountOfIterations/amountOfThreads;
-                    datas[i].a = a;
-                    datas[i].b = a+h;
-                    datas[i].step = step;
-                    a += h;
-                    threads[i] = (HANDLE)_beginthreadex(nullptr, 0, myThread, &datas[i], CREATE_SUSPENDED, nullptr);
-                }
+                datas[0].start = 0;datas[0].end=4;datas[0].source=A;datas[0].dest=C;
+                threads[0] = (HANDLE)_beginthreadex(nullptr, 0, myThread, &datas[0], CREATE_SUSPENDED, nullptr);
+                datas[1].start = 5;datas[1].end=9;datas[1].source=A;datas[1].dest=C;
+                threads[1] = (HANDLE)_beginthreadex(nullptr, 0, myThread, &datas[1], CREATE_SUSPENDED, nullptr);
+                datas[2].start = 0;datas[2].end=4;datas[2].source=B;datas[2].dest=C;
+                threads[2] = (HANDLE)_beginthreadex(nullptr, 0, myThread, &datas[2], CREATE_SUSPENDED, nullptr);
+                datas[3].start = 5;datas[3].end=9;datas[3].source=B;datas[3].dest=C;
+                threads[3] = (HANDLE)_beginthreadex(nullptr, 0, myThread, &datas[3], CREATE_SUSPENDED, nullptr);
 
 
-                for(int i = 0; i < amountOfThreads; i++){
+                for(int i = 0; i < 2; i++){
                     ResumeThread(threads[i]);
                 }
-                WaitForMultipleObjects(amountOfThreads, threads, TRUE, INFINITE);
+                for(int i = 2; i < 4; i++){
+                    ResumeThread(threads[i]);
+                }
+                WaitForMultipleObjects(4, threads, TRUE, INFINITE);
                 auto end = std::chrono::high_resolution_clock::now();
                 cout << "The execution time: " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << " ms" << endl;
-                for (int i = 0; i < amountOfThreads; i++){
+                for (int i = 0; i < 4; i++){
                     CloseHandle(threads[i]);
                 }
+                print(C);
                 return 0;
             }
             case 2:
@@ -94,47 +115,6 @@ int main(int argc, char* argv[]) {
             }
         }
     }
-}
-
-void loopedOutput(int amountOfIterations){
-    string name = "Markiian";
-    string surname = "Andreiko";
-    long id = 12345678;
-    for(int i = 0; i < amountOfIterations; i++){
-        cout.flush();
-        cout.flush() << i << ") Name is: " << name << endl << "Surname is: " << surname << endl
-                     << "Student ticket id is: " << id << endl <<std::flush;
-    }
-}
-
-void tabulation(double a, double b, double step){
-    cout << "----------" << endl
-         << "TABULATION " << endl
-         << "----------" << endl
-         << "a = " << a << endl
-         << "b = " << b << endl
-         << "step = " << step << endl << endl<<std::flush;
-    double x = a;
-    while(x <= b){
-        cout.flush();
-        cout << "x  = " << x << "\ty = " << functionToTabulate(x) << endl<<std::flush;
-        cout.flush();
-        x +=step;
-    }
-}
-
-double functionToTabulate(double x){
-    int n=0, k=0;
-    double  si=1, s=0;
-    while (fabs(si) > 0.0001)
-    {
-        k+=2;
-        si *= (-1.0 * x*x)/(k*(k-1));
-        s += si;
-        ++n;
-
-    }
-    return s;
 }
 
 void printThreadPriorityInfo(){
