@@ -1,6 +1,7 @@
 #include <iostream>
 #include <chrono>
 #include <math.h>
+#include <pthread.h>
 using namespace std;
 using namespace std::chrono;
 
