@@ -1,0 +1,3 @@
+/home/user/OS/practice3/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/user/OS/practice3/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/user/OS/practice3/cmake-build-debug/CMakeFiles/practice3.dir
